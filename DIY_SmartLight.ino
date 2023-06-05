@@ -10,11 +10,13 @@ float LUX = 0.0;  //Initializing BH1750 input float variable to 0.0
 
 /*Function definitions for controlling brightness*/
 
-int ConstantBrightness(int x){  //For constant brightness output
-	return 255*x/9.0;
+int ConstantBrightness(float y){  //For constant brightness output
+  return 255.0*y/9;
 }
 
-int LogBrightness(float x){
+int LogBrightness(float x){  //The brightness function
+  if(x>100)
+    return 0;
   return int((100.589-19.811*log(x+1.5))*2.55);
 }
 
@@ -65,7 +67,7 @@ class LED{  //class to store the variables and functions corresponding to the op
             glow();
         }
 		
-		    void update_with_const_brightness(int level){
+		    void update_with_const_brightness(int level){  //Updates the brightness according to user input
 			      brightness_function_index = 1;
 		  	    brightness = (*Brightness_Functions[brightness_function_index])(level);
 		  	    r = Temperatures[temp_index][0]*(brightness/255.0);
@@ -74,24 +76,24 @@ class LED{  //class to store the variables and functions corresponding to the op
             glow();
 	    	}
   
-        byte Hotter(){
+        char Hotter(){  //Increases light temperature
             if(temp_index < 10){
                 temp_index++;
             }
             update();
-			      return 0;
+			      return '0';
         }
   
-        byte Cooler(){
+        char Cooler(){  //Decreases light temperature
             if(temp_index > 0){
                 temp_index--;
             }
         update();
-			  return 0;
+			  return '0';
         }
 };
 
-byte data[5] = {1, 1, 0, 0, 7};
+char data[5] = {'1', '1','0', '0', '7'};  //array to store transmitted information
 const int data_size = 5;
 LED Light;
 
@@ -100,7 +102,6 @@ void setup(){
     Serial.begin(9600);
     Wire.begin();
     lightInput.begin(BH1750::ONE_TIME_HIGH_RES_MODE);
-    //pinMode(LUX_PIN, INPUT);
     pinMode(3, OUTPUT);
     pinMode(5, OUTPUT);
     pinMode(9, OUTPUT);
@@ -117,19 +118,19 @@ void loop(){
     LUX = lightInput.readLightLevel();
     if(Serial.available())
       Serial.readBytes(data, data_size);
-    if(data[0]==1){
+    if(data[0]=='1'){
       Light.glow();
-      if(data[1]==0)
-        Light.update_with_const_brightness(int(data[4]));
-      if(data[1]==1)
+      if(data[1]=='0')
+        Light.update_with_const_brightness(data[4]-'0');
+      if(data[1]=='1')
         Light.update();
-      if(data[3]==1)
+      if(data[3]=='1')
         data[3] = Light.Hotter();
-      if(data[3]==2)
+      if(data[3]=='2')
         data[3] = Light.Cooler();
     }
-    else if(data[0]==0)
+    else if(data[0]=='0')
       Light.dim();
     Serial.println(100-Light.brightness/2.55);
-    delay(2000);
+    delay(500);
 }
